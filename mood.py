@@ -19,14 +19,11 @@ def get_db_connection():
 # Initialize the database (create tables and seed data)
 def init_db():
     with get_db_connection() as conn:
-        # Enable foreign key support in SQLite
         conn.execute('PRAGMA foreign_keys = ON;')
 
-        # Drop existing tables to avoid schema conflicts
         conn.execute('DROP TABLE IF EXISTS moods')
         conn.execute('DROP TABLE IF EXISTS users')
 
-        # Create the users table
         conn.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,7 +33,6 @@ def init_db():
             )
         ''')
 
-        # Create the moods table with a foreign key reference to the users table
         conn.execute('''
             CREATE TABLE IF NOT EXISTS moods (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,14 +44,13 @@ def init_db():
             )
         ''')
 
-        # Insert sample users into the users table
         conn.executemany('''
             INSERT OR IGNORE INTO users (id, first_name, last_name, is_dorm_parent)
             VALUES (?, ?, ?, ?)
         ''', [
-            (1, 'Dorm', 'Parent', 1),  # Dorm parent
-            (2, 'Student', 'A', 0),    # Regular student
-            (3, 'Student', 'B', 0)     # Regular student
+            (1, 'Dorm', 'Parent', 1),
+            (2, 'Student', 'A', 0),
+            (3, 'Student', 'B', 0)
         ])
 
         print("Database initialized successfully!")
@@ -73,19 +68,34 @@ def get_current_user():
     return None
 
 
+# Public helper to fetch all moods (used in faculty dashboard)
+def get_all_moods():
+    with get_db_connection() as conn:
+        rows = conn.execute('''
+            SELECT moods.id, moods.mood_score, moods.mood_description, moods.timestamp,
+                   users.first_name || ' ' || users.last_name AS student_name
+            FROM moods
+            JOIN users ON moods.user_id = users.id
+            ORDER BY moods.timestamp DESC
+        ''').fetchall()
+
+    # Convert sqlite3.Row objects to dicts
+    return [dict(row) for row in rows]
+
+
 # Route for mood input
 @mood.route('/mood_input', methods=['GET', 'POST'])
 def mood_input():
-    current_user = get_current_user()  # Get current user based on session
+    current_user = get_current_user()
 
     if not current_user:
         flash('You must be logged in to log a mood.')
-        return redirect(url_for('auth.login'))  # Redirect to login if not logged in
+        return redirect(url_for('auth.login'))
 
     if request.method == 'POST':
         try:
             mood_score = int(request.form.get('mood_score'))
-        except ValueError:
+        except (ValueError, TypeError):
             flash('Invalid mood score. Please enter a number between 1 and 10.')
             return redirect(url_for('mood.mood_input'))
 
@@ -110,16 +120,16 @@ def mood_input():
 # Route for updating mood
 @mood.route('/update_mood', methods=['GET', 'POST'])
 def update_mood():
-    current_user = get_current_user()  # Get current user based on session
+    current_user = get_current_user()
 
     if not current_user:
         flash('You must be logged in to update your mood.')
-        return redirect(url_for('auth.login'))  # Redirect to login if not logged in
+        return redirect(url_for('auth.login'))
 
     if request.method == 'POST':
         try:
             mood_score = int(request.form.get('mood_score'))
-        except ValueError:
+        except (ValueError, TypeError):
             flash('Invalid mood score. Please enter a number between 1 and 10.')
             return redirect(url_for('mood.update_mood'))
 
@@ -156,11 +166,11 @@ def update_mood():
 # Route for the student's dashboard
 @mood.route('/student_dashboard')
 def student_dashboard():
-    current_user = get_current_user()  # Get current user based on session
+    current_user = get_current_user()
 
     if not current_user:
         flash('You must be logged in to view your mood history.')
-        return redirect(url_for('auth.login'))  # Redirect to login if not logged in
+        return redirect(url_for('auth.login'))
 
     with get_db_connection() as conn:
         student_moods = conn.execute('''
@@ -173,37 +183,6 @@ def student_dashboard():
 # Route for logging out (clear session)
 @mood.route('/logout')
 def logout():
-    session.clear()  # Clears the session to log the user out
+    session.clear()
     flash('You have been logged out.')
-    return redirect(url_for('auth.login'))  # Redirect to login page
-
-
-# Route for the faculty dashboard
-@mood.route('/dashboard')
-def dashboard():
-    current_user = get_current_user()  # Get current user based on session
-
-    if not current_user:
-        flash('You must be logged in to view this page.')
-        return redirect(url_for('auth.login'))  # Redirect to login if not logged in
-
-    with get_db_connection() as conn:
-        if current_user['is_dorm_parent']:
-            # Dorm parents see all moods
-            all_moods = conn.execute('''
-                SELECT moods.*, users.first_name AS student_name
-                FROM moods
-                JOIN users ON moods.user_id = users.id
-                ORDER BY timestamp DESC
-            ''').fetchall()
-        else:
-            # Students see only their own moods
-            all_moods = conn.execute('''
-                SELECT moods.*, users.first_name AS student_name
-                FROM moods
-                JOIN users ON moods.user_id = users.id
-                WHERE moods.user_id = ?
-                ORDER BY timestamp DESC
-            ''', (current_user['id'],)).fetchall()
-
-    return render_template('faculty_dashboard.html', all_moods=all_moods, current_user=current_user)
+    return redirect(url_for('auth.login'))
