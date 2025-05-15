@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+   <title>Faculty Login</title>
+</head>
+<body>
+   <header>
+      <h1>Faculty Login</h1>
+   </header>
+   <main>
+      <a href="{{ url_for('google.login') }}">
+         <button>Login with Google</button>
+      </a>
+   </main>
+   <footer>
+      <p>&copy; 2025 Faculty Portal</p>
+   </footer>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+   <title>Faculty Dashboard</title>
+</head>
+<body>
+   <header>
+       <h1>Faculty Dashboard</h1>
+       <p>Welcome! Here you can view all logged student moods.</p>
+   </header>
+   <main>
+       <section id="mood-reports">
+           <h2>Student Mood Reports</h2>
+           <table border="1">
+               <thead>
+                   <tr>
+                       <th>Student Name</th>
+                       <th>Mood Score</th>
+                       <th>Mood Description</th>
+                       <th>Timestamp</th>
+                   </tr>
+               </thead>
+               <tbody>
+                   {% for mood in all_moods %}
+                   <tr>
+                       <td>{{ mood['student_name'] }}</td>
+                       <td>{{ mood['mood_score'] }}</td>
+                       <td>{{ mood['mood_description'] }}</td>
+                       <td>{{ mood['timestamp'] }}</td>
+                   </tr>
+                   {% endfor %}
+               </tbody>
+           </table>
+           <p>Total Entries: {{ all_moods|length }}</p>
+       </section>
+   </main>
+   <footer>
+       <a href="{{ url_for('home') }}">Go Home</a>
+   </footer>
+</body>
+</html>

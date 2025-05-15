@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+   <title>Mood Input</title>
+   <style>
+       * {
+           font-family: "Times New Roman", Times, serif;
+       }
+
+       body {
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           justify-content: center;
+           padding: 2rem;
+           background-color: #f9f9f9;
+       }
+
+       h1 {
+           text-align: center;
+       }
+
+       form {
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           width: 80%;
+           max-width: 600px;
+       }
+
+       label, input, textarea {
+           width: 100%;
+           margin-bottom: 1rem;
+           text-align: center;
+       }
+
+       .slider {
+           width: 100%;
+       }
+
+       .emoji-feedback {
+           font-size: 2.5rem;
+           margin: 0.5rem 0;
+           text-align: center;
+       }
+
+       .collapsible {
+           cursor: pointer;
+           background-color: #eee;
+           padding: 10px;
+           border: none;
+           text-align: center;
+           width: 100%;
+           margin: 10px 0;
+       }
+
+       .content {
+           display: none;
+           padding: 10px;
+           border: 1px solid #ccc;
+           width: 100%;
+           text-align: center;
+       }
+
+       button[type="submit"] {
+           padding: 0.5rem 1rem;
+           font-size: 1rem;
+       }
+
+       #gamification-message {
+           margin-bottom: 20px;
+           font-size: 1.2rem;
+           text-align: center;
+       }
+   </style>
+</head>
+<body>
+   <h1>Log Your Mood</h1>
+
+   <form action="{{ url_for('mood.mood_input') }}" method="post">
+       <label for="mood_score">Mood Slider (1 = 😞, 10 = 🎉):</label>
+       <input type="range" id="mood_score" name="mood_score" min="1" max="10" class="slider" required>
+       <div class="emoji-feedback" id="emoji">🙂</div>
+
+       <label for="mood_description">Mood Description:</label>
+       <input type="text" id="mood_description" name="mood_description" required>
+
+       <button type="button" class="collapsible">Add more context (optional)</button>
+       <div class="content">
+           <label for="mood_reason">Why do you feel this way?</label><br>
+           <textarea name="mood_reason" id="mood_reason" rows="3"></textarea><br><br>
+
+           <label for="goal">Small goal for today?</label><br>
+           <input type="text" name="goal" id="goal">
+       </div>
+
+       <br>
+       <button type="submit">Submit</button>
+   </form>
+
+   <script>
+       const slider = document.getElementById("mood_score");
+       const emoji = document.getElementById("emoji");
+       const moodMap = ["😞", "😕", "😐", "🙂", "😊", "😄", "😁", "😎", "🤩", "🎉"];
+
+       slider.addEventListener("input", () => {
+           emoji.textContent = moodMap[slider.value - 1];
+       });
+
+       const coll = document.querySelector(".collapsible");
+       const content = document.querySelector(".content");
+       coll.addEventListener("click", function() {
+           content.style.display = content.style.display === "block" ? "none" : "block";
+       });
+   </script>
+</body>
+</html>
+
