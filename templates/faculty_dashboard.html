@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+   <meta charset="UTF-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1" />
+   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
    <title>Faculty Dashboard</title>
 </head>
 <body>
@@ -11,10 +11,11 @@
        <h1>Faculty Dashboard</h1>
        <p>Welcome! Here you can view all logged student moods.</p>
    </header>
+
    <main>
        <section id="mood-reports">
            <h2>Student Mood Reports</h2>
-           <table border="1">
+           <table border="1" cellpadding="8" cellspacing="0">
                <thead>
                    <tr>
                        <th>Student Name</th>
@@ -31,13 +32,40 @@
                        <td>{{ mood['mood_description'] }}</td>
                        <td>{{ mood['timestamp'] }}</td>
                    </tr>
+                   {% else %}
+                   <tr><td colspan="4">No mood logs found.</td></tr>
                    {% endfor %}
                </tbody>
            </table>
            <p>Total Entries: {{ all_moods|length }}</p>
        </section>
+
+       <section id="average-moods" style="margin-top: 2em;">
+           <h2>Average Mood Scores (Last 7 Days)</h2>
+           <table border="1" cellpadding="8" cellspacing="0">
+               <thead>
+                   <tr>
+                       <th>Student ID</th>
+                       <th>Average Mood</th>
+                   </tr>
+               </thead>
+               <tbody>
+                   {% if averages %}
+                       {% for student_id, avg_mood in averages %}
+                       <tr>
+                           <td>{{ student_id }}</td>
+                           <td>{{ "%.2f"|format(avg_mood) }}</td>
+                       </tr>
+                       {% endfor %}
+                   {% else %}
+                   <tr><td colspan="2">No mood data in the last 7 days.</td></tr>
+                   {% endif %}
+               </tbody>
+           </table>
+       </section>
    </main>
-   <footer>
+
+   <footer style="margin-top: 3em;">
        <a href="{{ url_for('home') }}">Go Home</a>
    </footer>
 </body>
