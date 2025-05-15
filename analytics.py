@@ -1,34 +1,35 @@
 import sqlite3
-from datetime import datetime, timedelta
 
-DB_PATH = "database.db"
+DB_PATH = "mood.db"  # same as your mood.py
 
 def get_connection():
-    return sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def get_average_mood_last_7_days():
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        SELECT student_id, AVG(mood_score)
-        FROM mood_logs
-        WHERE date >= date('now', '-7 days')
-        GROUP BY student_id
+        SELECT user_id, AVG(mood_score) AS avg_mood
+        FROM moods
+        WHERE DATE(timestamp) >= DATE('now', '-7 days')
+        GROUP BY user_id
     """)
     result = cur.fetchall()
     conn.close()
     return result
 
-def detect_trend_for_student(student_id):
+def detect_trend_for_student(user_id):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        SELECT mood_score FROM mood_logs
-        WHERE student_id = ?
-        ORDER BY date DESC
+        SELECT mood_score FROM moods
+        WHERE user_id = ?
+        ORDER BY timestamp DESC
         LIMIT 6
-    """, (student_id,))
-    scores = [row[0] for row in cur.fetchall()]
+    """, (user_id,))
+    scores = [row['mood_score'] for row in cur.fetchall()]
     conn.close()
 
     if len(scores) < 6:
@@ -45,13 +46,14 @@ def detect_trend_for_student(student_id):
 def get_students_with_consistently_low_mood(threshold=3, days=7, occurrences=2):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute(f"""
-        SELECT student_id, COUNT(*) as low_days
-        FROM mood_logs
-        WHERE mood_score <= ? AND date >= date('now', '-{days} days')
-        GROUP BY student_id
+    cur.execute("""
+        SELECT user_id, COUNT(*) as low_days
+        FROM moods
+        WHERE mood_score <= ? AND DATE(timestamp) >= DATE('now', ?)
+        GROUP BY user_id
         HAVING low_days >= ?
-    """, (threshold, occurrences))
+    """, (threshold, f'-{days} days', occurrences))
     result = cur.fetchall()
     conn.close()
     return result
+
