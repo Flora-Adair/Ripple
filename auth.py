@@ -1,42 +1,16 @@
 from flask import Blueprint, redirect, url_for, render_template, flash, session, request
-from flask_dance.contrib.google import make_google_blueprint, google
-from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin, current_user
+from flask_dance.contrib.google import google
+from flask_login import login_user, logout_user, login_required, UserMixin, current_user
 import os
 
 # -------------------------------
-# Blueprints
+# Blueprint setup
 # -------------------------------
-
 auth = Blueprint('auth', __name__)
 
-# Flask-Dance Google OAuth blueprint
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
-
-if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
-    raise ValueError("Google OAuth credentials not set!")
-
-google_bp = make_google_blueprint(
-    client_id=GOOGLE_CLIENT_ID,
-    client_secret=GOOGLE_CLIENT_SECRET,
-    scope=[
-        "openid",
-        "https://www.googleapis.com/auth/userinfo.email",
-        "https://www.googleapis.com/auth/userinfo.profile"
-    ],
-    redirect_url="http://ripple.catecs.org/auth/google/authorized"
-)
-
-)
-
 # -------------------------------
-# Flask-Login setup
+# User model and in-memory store
 # -------------------------------
-
-login_manager = LoginManager()
-login_manager.login_view = "auth.login"
-login_manager.init_app(auth)
-
 class User(UserMixin):
     def __init__(self, id, first_name=None, last_name=None, dorm=None, email=None, is_dorm_parent=False):
         self.id = id
@@ -46,17 +20,12 @@ class User(UserMixin):
         self.email = email
         self.is_dorm_parent = is_dorm_parent
 
-# In-memory user storage (for demonstration purposes)
+# Temporary in-memory user storage
 users = {}
 
-@login_manager.user_loader
-def load_user(user_id):
-    return users.get(int(user_id))
-
 # -------------------------------
-# STUDENT Registration (no login)
+# STUDENT Registration
 # -------------------------------
-
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -72,21 +41,20 @@ def register():
             is_dorm_parent=False
         )
         users[new_user.id] = new_user
-        session['user_id'] = new_user.id  # Student session only
+        session['user_id'] = new_user.id  # No login required
         flash('Welcome to Ripple, student!')
         return redirect(url_for('mood.student_dashboard'))
 
     return render_template('register.html')
 
 # -------------------------------
-# DORM PARENT Login via Google
+# DORM PARENT Google Login
 # -------------------------------
-
 @auth.route('/login', endpoint='login')
 def google_login():
     return redirect(url_for('google.login'))
 
-@auth.route('/google/authorized')  # This must match redirect_url
+@auth.route('/google/authorized')
 def google_authorize():
     if not google.authorized:
         return redirect(url_for("google.login"))
@@ -120,9 +88,8 @@ def google_authorize():
     return redirect(url_for('auth.dashboard'))
 
 # -------------------------------
-# Dashboard (role-specific)
+# Dashboard (Dorm Parent Only)
 # -------------------------------
-
 @auth.route('/dashboard')
 @login_required
 def dashboard():
@@ -135,7 +102,6 @@ def dashboard():
 # -------------------------------
 # Logout
 # -------------------------------
-
 @auth.route('/logout')
 @login_required
 def logout():
